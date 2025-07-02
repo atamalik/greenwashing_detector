@@ -13,7 +13,8 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # src/greenwashing_detector/main.py
 
 def run_greenwashing_crew(pdf_path: str) -> str:
-    crew = GreenwashingDetector()
+    detector = GreenwashingDetector()
+    crew = detector.crew()  # Get the crew instance
     return crew.kickoff(inputs={"file_path": pdf_path})
 
 if __name__ == "__main__":

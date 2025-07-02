@@ -9,8 +9,6 @@ esg_analyst:
     what matters most and spot inconsistencies in ESG messaging.
   verbose: true
   memory: true
-  tools:
-    - PDFReportReader
 
 compliance_checker:
   role: Sustainability Compliance Expert

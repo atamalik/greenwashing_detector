@@ -13,7 +13,11 @@ class GreenwashingDetector():
 
     agents: List[BaseAgent]
     tasks: List[Task]
-
+    
+    def __init__(self):
+        super().__init__()
+        self.tools = {"PDFReportReader": PDFReportReader}
+    
     # Learn more about YAML configuration files here:
     # Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
     # Tasks: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
@@ -22,8 +26,12 @@ class GreenwashingDetector():
     # https://docs.crewai.com/concepts/agents#agent-tools
     @agent
     def esg_analyst(self) -> Agent:
+        config = self.agents_config['esg_analyst'].copy()
+        # Remove tools from config since we'll add them directly
+        if 'tools' in config:
+            del config['tools']
         return Agent(
-            config=self.agents_config['esg_analyst'],
+            config=config,
             tools=[PDFReportReader()],
             verbose=True
         )

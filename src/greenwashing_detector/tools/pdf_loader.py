@@ -3,12 +3,14 @@
 from crewai.tools import BaseTool
 from PyPDF2 import PdfReader
 import os
+from typing import Annotated
 
 class PDFReportReader(BaseTool):
-    name = "PDFReportReader"
-    description = "Extracts raw text from a given sustainability PDF report."
+    name: Annotated[str, "PDFReportReader"] = "PDFReportReader"
+    description: Annotated[str, "Tool description"] = "Extracts raw text from a given sustainability PDF report."
 
-    def __call__(self, file_path: str) -> str:
+    def _run(self, file_path: str) -> str:
+        """Implementation of the tool's functionality"""
         try:
             reader = PdfReader(file_path)
             text = ""
