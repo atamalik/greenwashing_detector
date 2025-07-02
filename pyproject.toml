@@ -1,0 +1,23 @@
+[project]
+name = "greenwashing_detector"
+version = "0.1.0"
+description = "greenwashing_detector using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "crewai[tools]>=0.119.0,<1.0.0"
+]
+
+[project.scripts]
+greenwashing_detector = "greenwashing_detector.main:run"
+run_crew = "greenwashing_detector.main:run"
+train = "greenwashing_detector.main:train"
+replay = "greenwashing_detector.main:replay"
+test = "greenwashing_detector.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"

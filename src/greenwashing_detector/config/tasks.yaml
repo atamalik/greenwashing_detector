@@ -1,0 +1,29 @@
+extract_esg_claims:
+  description: >
+    Read and analyze the uploaded PDF file at {file_path}. Extract up to 5 key ESG-related
+    claims made by the company. Focus on statements related to environmental impact,
+    carbon neutrality goals, social initiatives, or sustainability commitments.
+
+    Make sure the claims are concise and represent the core messaging from the document.
+  expected_output: >
+    A list of 5 distinct ESG-related claims with short descriptions or context snippets.
+  agent: esg_analyst
+
+validate_claims:
+  description: >
+    Review the ESG claims extracted by the analyst for potential signs of greenwashing.
+    For each claim:
+      - Determine if it is vague, unverifiable, or exaggerated
+      - Cross-check its credibility using global standards like GRI or SASB
+      - Provide a greenwashing flag (Yes/No)
+      - Assign a confidence score from 0–100
+      - Write a brief explanation of your decision
+
+    Your final answer MUST be in markdown format with one section per claim.
+  expected_output: >
+    A markdown report containing:
+    - Each ESG claim
+    - Greenwashing flag (Yes/No)
+    - Confidence score (0–100)
+    - Explanation
+  agent: compliance_checker
