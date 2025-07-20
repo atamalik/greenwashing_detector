@@ -1,0 +1,99 @@
+{
+  "timestamp": "2025-07-03T09:03:48.281393",
+  "summary": {
+    "total_queries": 8,
+    "success_rate": "0.0%",
+    "avg_response_time": "0.00s",
+    "error_breakdown": {
+      "timeout_errors": 8,
+      "network_errors": 0,
+      "api_errors": 0
+    }
+  },
+  "esg_topic_coverage": {
+    "sustainability": 4,
+    "carbon_neutral": 1,
+    "esg_reporting": 3,
+    "greenwashing": 2,
+    "certification": 2,
+    "compliance": 1
+  },
+  "recent_queries": [
+    {
+      "timestamp": "2025-07-03T09:02:37.399688",
+      "query": "Tesla sustainability claims 2024",
+      "success": false,
+      "response_time": 10.122232913970947,
+      "error_type": "timeout",
+      "result_length": 127
+    },
+    {
+      "timestamp": "2025-07-03T09:02:47.543775",
+      "query": "ESG greenwashing examples companies",
+      "success": false,
+      "response_time": 10.143661975860596,
+      "error_type": "timeout",
+      "result_length": 127
+    },
+    {
+      "timestamp": "2025-07-03T09:02:57.656653",
+      "query": "GRI sustainability reporting standards",
+      "success": false,
+      "response_time": 10.112782001495361,
+      "error_type": "timeout",
+      "result_length": 127
+    },
+    {
+      "timestamp": "2025-07-03T09:03:07.770000",
+      "query": "carbon neutral certification verification",
+      "success": false,
+      "response_time": 10.113168716430664,
+      "error_type": "timeout",
+      "result_length": 127
+    },
+    {
+      "timestamp": "2025-07-03T09:03:17.895493",
+      "query": "sustainability compliance requirements",
+      "success": false,
+      "response_time": 10.125244855880737,
+      "error_type": "timeout",
+      "result_length": 127
+    },
+    {
+      "timestamp": "2025-07-03T09:03:28.017645",
+      "query": "ESG reporting best practices",
+      "success": false,
+      "response_time": 10.12207293510437,
+      "error_type": "timeout",
+      "result_length": 127
+    },
+    {
+      "timestamp": "2025-07-03T09:03:38.143217",
+      "query": "greenwashing detection methods",
+      "success": false,
+      "response_time": 10.125487804412842,
+      "error_type": "timeout",
+      "result_length": 127
+    },
+    {
+      "timestamp": "2025-07-03T09:03:48.281229",
+      "query": "sustainability certification standards",
+      "success": false,
+      "response_time": 10.137864828109741,
+      "error_type": "timeout",
+      "result_length": 127
+    }
+  ],
+  "recommendations": [
+    {
+      "type": "warning",
+      "message": "Low success rate detected. Check network connectivity and API key validity.",
+      "priority": "high"
+    },
+    {
+      "type": "timeout",
+      "message": "Timeout errors detected. Consider increasing timeout values or checking network stability.",
+      "priority": "medium"
+    }
+  ]
+}

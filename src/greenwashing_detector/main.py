@@ -99,61 +99,113 @@ def run_greenwashing_crew(pdf_path: str) -> str:
     esg_content = detector.process_esg_analysis_chunks(pdf_path)
     logger.info(f"✅ ESG content prepared: {len(esg_content)} characters")
     
-    # Process chunks for claims extraction (combines all chunks)
-    claims_content = detector.process_claims_across_chunks(pdf_path)
-    logger.info(f"✅ Claims content prepared: {len(claims_content)} characters")
+    # --- Step 2a: Run ESG Analysis First ---
+    logger.info("\n🔍 Step 2a: Running ESG Analysis")
+    logger.info("-" * 40)
     
-    # Create a crew with the remaining tasks (ESG analysis and claims validation)
-    remaining_crew = Crew(
-        agents=[detector.esg_analyst(), detector.compliance_checker()],
-        tasks=[detector.extract_esg_claims(), detector.validate_claims()],
+    # Create a crew with only the ESG analysis task
+    esg_crew = Crew(
+        agents=[detector.esg_analyst()],
+        tasks=[detector.extract_esg_claims()],
         process=Process.sequential,
         verbose=True
     )
     
-    # Execute the remaining tasks
+    # Execute ESG analysis
     start_time = time.time()
-    remaining_inputs = {
+    esg_inputs = {
         "file_path": pdf_path,
-        "esg_content": esg_content,
-        "claims_content": claims_content
+        "esg_content": esg_content
     }
     
-    remaining_result = remaining_crew.kickoff(inputs=remaining_inputs)
-    end_time = time.time()
-    remaining_processing_time = end_time - start_time
+    esg_result = esg_crew.kickoff(inputs=esg_inputs)
+    esg_time = time.time() - start_time
     
-    total_processing_time = framework_processing_time + remaining_processing_time
+    logger.info("✅ ESG analysis completed")
+    logger.info(f"⏱️  ESG analysis time: {esg_time:.2f} seconds")
+    
+    # Save ESG analyst output
+    detector.save_agent_output_to_md("esg_analyst", "extract_esg_claims", esg_result, pdf_path)
+    
+    # --- Step 2b: Run Claims Validation with ESG Analyst Output ---
+    logger.info("\n🔍 Step 2b: Running Claims Validation")
+    logger.info("-" * 40)
+    
+    # Convert ESG result to string
+    esg_output_str = str(esg_result)
+    if hasattr(esg_result, 'raw'):
+        esg_output_str = str(esg_result.raw)
+    
+    # Chunk the ESG output for validation to avoid token limits
+    logger.info("🔄 Chunking ESG output for claims validation...")
+    validation_chunks = detector.chunk_esg_output_for_validation(esg_output_str)
+    logger.info(f"✅ Created {len(validation_chunks)} validation chunks")
+    
+    # Process each validation chunk separately
+    all_validation_results = []
+    
+    for i, validation_chunk in enumerate(validation_chunks, 1):
+        logger.info(f"🔍 Processing validation chunk {i} of {len(validation_chunks)}")
+        
+        # Create a crew with only the claims validation task
+        validation_crew = Crew(
+            agents=[detector.compliance_checker()],
+            tasks=[detector.validate_claims()],
+            process=Process.sequential,
+            verbose=True
+        )
+        
+        # Execute claims validation with ESG analyst output chunk
+        start_time = time.time()
+        validation_inputs = {
+            "esg_analyst_output": validation_chunk
+        }
+        
+        chunk_validation_result = validation_crew.kickoff(inputs=validation_inputs)
+        chunk_validation_time = time.time() - start_time
+        
+        logger.info(f"✅ Validation chunk {i} completed in {chunk_validation_time:.2f} seconds")
+        
+        # Add chunk information to result
+        chunk_result_with_info = f"## Claims Validation - Chunk {i} of {len(validation_chunks)}\n\n"
+        chunk_result_with_info += str(chunk_validation_result)
+        chunk_result_with_info += f"\n\n--- Chunk {i} Processing Time: {chunk_validation_time:.2f}s ---\n"
+        
+        all_validation_results.append(chunk_result_with_info)
+    
+    # Combine all validation results
+    validation_result = f"# Claims Validation Results from {len(validation_chunks)} Chunks\n\n"
+    for i, result in enumerate(all_validation_results, 1):
+        validation_result += result
+        validation_result += "\n\n" + "="*50 + "\n\n"
+    
+    validation_time = time.time() - start_time  # Total validation time
+    
+    logger.info("✅ Claims validation completed")
+    logger.info(f"⏱️  Claims validation time: {validation_time:.2f} seconds")
+    
+    # Save compliance checker output
+    detector.save_agent_output_to_md("compliance_checker", "validate_claims", validation_result, pdf_path)
+    
+    total_processing_time = framework_processing_time + esg_time + validation_time
     
     logger.info("🎉 Full Analysis Completed!")
     logger.info(f"⏱️  Total processing time: {total_processing_time:.2f} seconds")
     logger.info("=" * 60)
     
-    # Save individual agent outputs for debugging
-    logger.info("💾 Saving individual agent outputs for debugging...")
-    
-    # Extract individual results from the remaining crew output
-    # Note: CrewAI returns a combined result, so we need to parse it
-    remaining_result_str = str(remaining_result)
-    
-    # Save ESG analyst output (first part of the result)
-    if "ESG Claims Investigator" in remaining_result_str or "ESG-related claims" in remaining_result_str:
-        detector.save_agent_output_to_md("esg_analyst", "extract_esg_claims", remaining_result, pdf_path)
-    
-    # Save compliance checker output (second part of the result)
-    if "Sustainability Compliance Expert" in remaining_result_str or "greenwashing" in remaining_result_str.lower():
-        detector.save_agent_output_to_md("compliance_checker", "validate_claims", remaining_result, pdf_path)
-    
     # Save a combined workflow summary
-    detector.save_workflow_summary_to_md(framework_result, remaining_result, pdf_path, total_processing_time)
+    detector.save_workflow_summary_to_md(framework_result, f"{esg_result}\n\n{validation_result}", pdf_path, total_processing_time)
     
     # Return combined results
     combined_result = f"""
 # Framework Detection Results
 {framework_result}
 
-# ESG Analysis and Claims Validation
-{remaining_result}
+# ESG Analysis Results
+{esg_result}
+
+# Claims Validation Results
+{validation_result}
 """
     
     return combined_result
@@ -358,8 +410,24 @@ def run_enhanced_greenwashing_workflow(pdf_path: str) -> str:
     detector.save_framework_detection_to_md(framework_result, pdf_path)
     detector.save_agent_output_to_md("framework_detector", "detect_reporting_framework", framework_result, pdf_path)
     
-    # --- Step 2: Fluff Removal (Ollama) ---
-    logger.info("\n🧹 Step 2: Fluff Removal (Ollama)")
+    # Extract detected frameworks for fluff remover
+    detected_frameworks = detector._extract_detected_frameworks(framework_result)
+    logger.info(f"🎯 Detected frameworks for fluff remover: {detected_frameworks}")
+    
+    # Store framework result for TCFD routing logic
+    detector.last_framework_result = framework_result
+    
+    # Check if TCFD is a major framework and determine analysis route
+    tcfd_is_major = detector.is_tcfd_major_framework(detected_frameworks)
+    tcfd_analysis_route = detector.get_tcfd_analysis_route(detected_frameworks)
+    
+    if tcfd_is_major:
+        logger.info(f"🎯 TCFD detected as major framework - Analysis route: {tcfd_analysis_route}")
+    else:
+        logger.info("📋 TCFD not detected as major framework - Using standard analysis")
+    
+    # --- Step 2: Framework-Aware Fluff Removal (Ollama) ---
+    logger.info("\n🧹 Step 2: Framework-Aware Fluff Removal (Ollama)")
     logger.info("-" * 40)
     
     # First, extract full text from PDF
@@ -372,7 +440,7 @@ def run_enhanced_greenwashing_workflow(pdf_path: str) -> str:
     
     logger.info(f"📄 Full text extracted: {len(full_text)} characters")
     
-    # Run fluff removal
+    # Run framework-aware fluff removal
     fluff_crew = Crew(
         agents=[detector.fluff_remover()],
         tasks=[detector.remove_report_fluff()],
@@ -381,11 +449,15 @@ def run_enhanced_greenwashing_workflow(pdf_path: str) -> str:
     )
     
     start_time = time.time()
-    fluff_result = fluff_crew.kickoff(inputs={"report_content": full_text})
+    fluff_result = fluff_crew.kickoff(inputs={
+        "report_content": full_text,
+        "detected_frameworks": detected_frameworks
+    })
     fluff_time = time.time() - start_time
     
-    logger.info("✅ Fluff removal completed")
+    logger.info("✅ Framework-aware fluff removal completed")
     logger.info(f"⏱️  Fluff removal time: {fluff_time:.2f} seconds")
+    logger.info(f"🎯 Frameworks preserved: {detected_frameworks}")
     
     # Save fluff removal results
     detector.save_agent_output_to_md("fluff_remover", "remove_report_fluff", fluff_result, pdf_path)
@@ -401,31 +473,124 @@ def run_enhanced_greenwashing_workflow(pdf_path: str) -> str:
     logger.info("\n🔄 Step 3: ChatGPT Chunking")
     logger.info("-" * 40)
     
-    # Process cleaned content for ChatGPT
-    chatgpt_content = detector.process_fluff_removed_content_with_chatgpt(cleaned_content)
-    logger.info(f"✅ ChatGPT content prepared: {len(chatgpt_content)} characters")
+    # Process cleaned content for ChatGPT - get all chunks
+    all_chunks = detector.process_all_chunks_for_chatgpt(cleaned_content)
+    logger.info(f"✅ Created {len(all_chunks)} chunks for ChatGPT processing")
     
     # --- Step 4: ESG Analysis and Claims Validation (ChatGPT) ---
     logger.info("\n🔍 Step 4: ESG Analysis and Claims Validation (ChatGPT)")
     logger.info("-" * 40)
     
-    # Create crew for ChatGPT-based analysis
-    chatgpt_crew = Crew(
-        agents=[detector.esg_analyst(), detector.compliance_checker()],
-        tasks=[detector.extract_esg_claims(), detector.validate_claims()],
-        process=Process.sequential,
-        verbose=True
-    )
+    # Process each chunk separately to avoid token limits
+    all_results = []
     
-    start_time = time.time()
-    chatgpt_inputs = {
-        "file_path": pdf_path,
-        "esg_content": chatgpt_content,
-        "claims_content": chatgpt_content
-    }
+    for i, chunk in enumerate(all_chunks, 1):
+        logger.info(f"📄 Processing chunk {i} of {len(all_chunks)}")
+        
+        # Use TCFD routing logic if TCFD is a major framework
+        if tcfd_is_major:
+            logger.info(f"🎯 Using TCFD specialized analysis route: {tcfd_analysis_route}")
+            
+            # Create TCFD specialized crew
+            tcfd_crew = detector.create_tcfd_specialized_crew(tcfd_analysis_route)
+            
+            start_time = time.time()
+            tcfd_inputs = {
+                "file_path": pdf_path,
+                "esg_content": chunk,
+                "claims_content": chunk
+            }
+            
+            chunk_result = tcfd_crew.kickoff(inputs=tcfd_inputs)
+            chunk_time = time.time() - start_time
+            
+            logger.info(f"✅ TCFD chunk {i} completed in {chunk_time:.2f} seconds")
+            
+        else:
+            # Use standard analysis for non-TCFD reports
+            logger.info("📋 Using standard analysis approach")
+            
+            # First, run ESG claims extraction
+            esg_crew = Crew(
+                agents=[detector.esg_analyst()],
+                tasks=[detector.extract_esg_claims()],
+                process=Process.sequential,
+                verbose=True
+            )
+            
+            start_time = time.time()
+            esg_inputs = {
+                "file_path": pdf_path,
+                "esg_content": chunk
+            }
+            
+            esg_result = esg_crew.kickoff(inputs=esg_inputs)
+            esg_time = time.time() - start_time
+            
+            logger.info(f"✅ ESG analysis chunk {i} completed in {esg_time:.2f} seconds")
+            
+            # Then, run claims validation with ESG results
+            validation_crew = Crew(
+                agents=[detector.compliance_checker()],
+                tasks=[detector.validate_claims()],
+                process=Process.sequential,
+                verbose=True
+            )
+            
+            # Convert ESG result to string and chunk it for validation
+            esg_output_str = str(esg_result)
+            if hasattr(esg_result, 'raw'):
+                esg_output_str = str(esg_result.raw)
+            
+            # Chunk the ESG output for validation to avoid token limits
+            logger.info(f"🔄 Chunking ESG output for validation (chunk {i})...")
+            validation_chunks = detector.chunk_esg_output_for_validation(esg_output_str)
+            logger.info(f"✅ Created {len(validation_chunks)} validation chunks for chunk {i}")
+            
+            # Process each validation chunk separately
+            all_chunk_validation_results = []
+            
+            for j, validation_chunk in enumerate(validation_chunks, 1):
+                logger.info(f"🔍 Processing validation sub-chunk {j} of {len(validation_chunks)}")
+                
+                validation_inputs = {
+                    "esg_analyst_output": validation_chunk
+                }
+                
+                sub_validation_result = validation_crew.kickoff(inputs=validation_inputs)
+                sub_validation_time = time.time() - start_time
+                
+                logger.info(f"✅ Validation sub-chunk {j} completed in {sub_validation_time:.2f} seconds")
+                
+                # Add sub-chunk information to result
+                sub_result_with_info = f"### Validation Sub-Chunk {j} of {len(validation_chunks)}\n\n"
+                sub_result_with_info += str(sub_validation_result)
+                
+                all_chunk_validation_results.append(sub_result_with_info)
+            
+            # Combine all validation results for this chunk
+            validation_result = f"## Claims Validation Results\n\n"
+            for j, result in enumerate(all_chunk_validation_results, 1):
+                validation_result += result
+                validation_result += "\n\n" + "-"*30 + "\n\n"
+            
+            validation_time = time.time() - start_time
+            
+            logger.info(f"✅ Claims validation chunk {i} completed in {validation_time:.2f} seconds")
+            
+            # Combine ESG and validation results
+            chunk_result = f"## ESG Analysis\n{esg_result}\n\n## Claims Validation\n{validation_result}"
+        
+        all_results.append(chunk_result)
     
-    chatgpt_result = chatgpt_crew.kickoff(inputs=chatgpt_inputs)
-    chatgpt_time = time.time() - start_time
+    # Combine all chunk results
+    combined_chatgpt_result = f"# Analysis Results from {len(all_chunks)} Chunks\n\n"
+    for i, result in enumerate(all_results, 1):
+        combined_chatgpt_result += f"## Chunk {i} Results\n\n"
+        combined_chatgpt_result += result
+        combined_chatgpt_result += "\n\n" + "="*50 + "\n\n"
+    
+    chatgpt_time = sum([time.time() - start_time for _ in all_results])  # Approximate total time
     
     total_time = framework_time + fluff_time + chatgpt_time
     
@@ -436,18 +601,18 @@ def run_enhanced_greenwashing_workflow(pdf_path: str) -> str:
     # Save individual agent outputs
     logger.info("💾 Saving individual agent outputs...")
     
-    chatgpt_result_str = str(chatgpt_result)
+    chatgpt_result_str = str(combined_chatgpt_result)
     
     # Save ESG analyst output
     if "ESG Claims Investigator" in chatgpt_result_str or "ESG-related claims" in chatgpt_result_str:
-        detector.save_agent_output_to_md("esg_analyst", "extract_esg_claims", chatgpt_result, pdf_path)
+        detector.save_agent_output_to_md("esg_analyst", "extract_esg_claims", combined_chatgpt_result, pdf_path)
     
     # Save compliance checker output
     if "Sustainability Compliance Expert" in chatgpt_result_str or "greenwashing" in chatgpt_result_str.lower():
-        detector.save_agent_output_to_md("compliance_checker", "validate_claims", chatgpt_result, pdf_path)
+        detector.save_agent_output_to_md("compliance_checker", "validate_claims", combined_chatgpt_result, pdf_path)
     
     # Save enhanced workflow summary
-    detector.save_enhanced_workflow_summary_to_md(framework_result, fluff_result, chatgpt_result, pdf_path, total_time)
+    detector.save_enhanced_workflow_summary_to_md(framework_result, fluff_result, combined_chatgpt_result, pdf_path, total_time)
     
     # Return combined results
     combined_result = f"""
@@ -460,7 +625,7 @@ def run_enhanced_greenwashing_workflow(pdf_path: str) -> str:
 Content cleaned and prepared for ChatGPT analysis.
 
 ## ESG Analysis and Claims Validation (ChatGPT)
-{chatgpt_result}
+{chatgpt_result_str}
 
 ## Processing Summary
 - Framework Detection: {framework_time:.2f}s

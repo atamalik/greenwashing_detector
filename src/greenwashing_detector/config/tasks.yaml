@@ -39,6 +39,41 @@ detect_reporting_framework:
 
     The report content has been extracted and provided below. Focus particularly on sections titled "About this Report", "Methodology", "Reporting Approach", or "Assurance", as these commonly contain framework declarations.
 
+    **CRITICAL CONTEXT ANALYSIS**: Pay close attention to the context and role of each framework mentioned:
+    
+    - **Primary Framework**: The main framework the report is aligned with or prepared in accordance with
+    - **Secondary Framework**: Additional frameworks mentioned but not the primary focus
+    - **Reference Framework**: Frameworks mentioned for context or comparison only
+    
+    **PRIMARY FRAMEWORK INDICATORS (Strongest Evidence - MUST HAVE)**:
+    - "prepared in accordance with" = PRIMARY framework (STRONGEST INDICATOR)
+    - "this report follows" = PRIMARY framework
+    - "we report in accordance with" = PRIMARY framework
+    - "the report is prepared following" = PRIMARY framework
+    
+    **IMPORTANT**: If NO framework uses "prepared in accordance with", then NO framework should be marked as PRIMARY.
+    
+    **SECONDARY FRAMEWORK INDICATORS (Weaker Evidence)**:
+    - "consistent with" = SECONDARY framework (even if "throughout this annual report")
+    - "aligned with" = SECONDARY framework (especially for specific sections like climate)
+    - "publish against" = SECONDARY framework
+    - "voluntary" = SECONDARY framework
+    - "additional" = SECONDARY framework
+    - "supplementary" = SECONDARY framework
+    - "recommendations" = SECONDARY framework (even if "throughout this annual report")
+    
+    **REFERENCE FRAMEWORK INDICATORS (Weakest Evidence)**:
+    - "consideration to" = REFERENCE framework
+    - "mentioned for context" = REFERENCE framework
+    - "but do not align in full with" = REFERENCE framework
+    
+    **CRITICAL RULE**: A framework mentioned with "throughout this annual report" but using "consistent with" or "recommendations" should be SECONDARY, not PRIMARY. Only "prepared in accordance with" can make a framework PRIMARY.
+    **STRICT CLASSIFICATION GUARDRAILS**:
+    - If a framework is mentioned with the words "voluntary", "ESG index", "publish against", "select GRI topics", or "referenced", it MUST NOT be marked as PRIMARY.
+    - GRI MUST NOT be PRIMARY unless the phrase "prepared in accordance with the GRI Standards" or similar appears.
+    - If no framework uses a PRIMARY-qualifying phrase like "prepared in accordance with", leave PRIMARY empty and only classify SECONDARY or REFERENCE frameworks.
+    - Consider which framework the report uses to structure its entire narrative. "Throughout the report" is only valid if paired with a PRIMARY phrase (e.g., "prepared in accordance with").
+
     The target frameworks to detect include (but are not limited to):
     - GRI Standards
     - IFRS S2 (ISSB)
@@ -52,9 +87,21 @@ detect_reporting_framework:
     - ISAE 3000
     - SDGs (Sustainable Development Goals)
 
+    **ANALYSIS PRIORITY**:
+    1. First, identify the PRIMARY framework (the one the report is mainly prepared in accordance with)
+    2. Then identify SECONDARY frameworks (additional standards followed)
+    3. Finally, identify REFERENCE frameworks (mentioned for context)
+
+    **EXAMPLE ANALYSIS**:
+    If a report states: "This Sustainability Report has been prepared in accordance with the GRI Standards. We have also aligned our climate disclosures with the TCFD recommendations."
+    
+    - GRI would be PRIMARY (prepared in accordance with)
+    - TCFD would be SECONDARY (aligned with, for climate section only)
+
     For each framework detected, provide:
     - The full name of the framework
     - Supporting quote or evidence from the report
+    - The framework's role (Primary/Secondary/Reference)
     - Whether the mention is explicit or inferred
     - A confidence score from 0 to 100
 
@@ -63,10 +110,11 @@ detect_reporting_framework:
     Report content to analyze:
     {report_content}
   expected_output: >
-    A bullet list in markdown format of the frameworks identified. Example:
+    A bullet list in markdown format of the frameworks identified, prioritized by their role in the report. Example:
 
-    - **GRI Standards**: Mentioned explicitly on page 5 under "About this Report" — "This report is prepared in accordance with the GRI Standards: Core option". **Confidence**: 98%
-    - **TCFD**: Not explicitly mentioned, but climate risk alignment and governance indicators are used. **Confidence**: 65%
+    - **GRI Standards (PRIMARY)**: "This Sustainability Report has been prepared in accordance with the GRI Standards" — Explicit primary alignment. **Confidence**: 95%
+    - **TCFD (SECONDARY)**: "We have also aligned our climate disclosures with the TCFD recommendations" — Secondary alignment for climate section only. **Confidence**: 80%
+    - **IFRS S2 (REFERENCE)**: "We have given consideration to IFRS S2" — Mentioned for context only. **Confidence**: 70%
     - **CDP**: Not mentioned or implied. **Confidence**: 10%
   agent: framework_detector
   
@@ -76,6 +124,34 @@ remove_report_fluff:
 
     Your job is to remove all irrelevant, vague, repetitive, or promotional content — while preserving every potentially material statement,
     whether quantitative (e.g. emissions, targets, energy use) or qualitative (e.g. commitments, claims, governance structures).
+
+    **CRITICAL FRAMEWORK PRESERVATION**: If TCFD or GRI frameworks are detected, you MUST preserve ALL content related to these frameworks as it will be analyzed by specialized tools.
+
+    **TCFD CONTENT - MUST PRESERVE:**
+    - All climate-related risk and opportunity discussions
+    - Board oversight of climate issues (tcfd_1)
+    - Management's role in climate risk assessment (tcfd_2)
+    - Climate risk identification and time horizons (tcfd_3)
+    - Impact on business strategy and financial planning (tcfd_4)
+    - Climate scenario analysis and resilience (tcfd_5)
+    - Climate risk identification processes (tcfd_6)
+    - Climate risk management processes (tcfd_7)
+    - Integration with overall risk management (tcfd_8)
+    - Climate metrics and performance indicators (tcfd_9)
+    - Scope 1, 2, 3 emissions data and methodology (tcfd_10)
+    - Climate targets and performance against targets (tcfd_11)
+    - Any mention of "climate", "emissions", "GHG", "carbon", "TCFD"
+
+    **GRI CONTENT - MUST PRESERVE:**
+    - All GRI indicator mentions (GRI 102, 305, 403, 401, 413, 414, 302, 306, 307, 308)
+    - Material topics and stakeholder engagement processes
+    - Specific GRI disclosures and reporting methodology
+    - Environmental performance data (emissions, energy, waste, water)
+    - Social performance data (employment, health & safety, community)
+    - Governance disclosures and compliance information
+    - Any mention of "GRI", "Global Reporting Initiative", "materiality", "stakeholder"
+    - Specific quantitative data related to GRI indicators
+    - Reporting boundaries and methodology explanations
 
     You MUST retain:
     - Any mention of ESG frameworks (GRI, TCFD, SASB, etc.)
@@ -99,6 +175,9 @@ remove_report_fluff:
 
     Report content to clean:
     {report_content}
+
+    Detected frameworks to preserve:
+    {detected_frameworks}
   expected_output: >
     A cleaned full-report text, retaining all ESG-relevant content for analysis.
     Return the output as a single continuous text block with section breaks if possible.
@@ -107,79 +186,81 @@ remove_report_fluff:
 
 extract_esg_claims:
   description: >
-    Read and analyze the complete sustainability report content provided in {esg_content}. This content includes ALL sections of the document, processed from multiple chunks to ensure comprehensive coverage.
-
-    Extract up to 5 key ESG-related claims made by the company. Focus on statements related to environmental impact,
-    carbon neutrality goals, social initiatives, or sustainability commitments.
-
-    IMPORTANT: Analyze ALL sections provided in the content to ensure you capture claims from throughout the entire document, not just the beginning.
-
-    FRAMEWORK-SPECIFIC ANALYSIS:
-    Based on the frameworks detected in the report, perform additional specialized analysis:
+    Extract ALL ESG claims from the provided sustainability report content.
     
-    - If TCFD (Task Force on Climate-related Financial Disclosures) is detected: Use the TCFDAnalyzerTool to perform detailed TCFD compliance analysis across all four pillars (Governance, Strategy, Risk Management, Metrics & Targets). Provide compliance scores, identify missing elements, and detect potential greenwashing signals.
+    **REQUIREMENTS**:
+    - Extract ALL specific, verifiable claims (no limit)
+    - Include environmental, social, governance, and financial claims
+    - Focus on claims that can be tested or challenged
+    - Include vague, unverifiable, or potentially misleading statements
     
-    - If GRI Standards are detected: Use the FrameworkGlossaryTool to understand GRI requirements and assess alignment with specific GRI indicators mentioned in the report.
+    **FRAMEWORK ANALYSIS**:
+    - If TCFD detected: Use TCFDAnalyzerTool with analysis_type="comprehensive"
+    - If GRI detected: Use GRIAnalyzerTool with analysis_type="comprehensive"
+    - If SASB detected: Use FrameworkGlossaryTool for industry-specific analysis
     
-    - If SASB is detected: Use the FrameworkGlossaryTool to evaluate industry-specific materiality and financial impact disclosures.
+    **OUTPUT FORMAT**:
+    ## ESG Claims Extracted
+    ### Environmental Claims: [List ALL]
+    ### Social Claims: [List ALL]
+    ### Governance Claims: [List ALL]
+    ### Financial Claims: [List ALL]
+    ### Vague Claims: [List ALL]
+    ### Missing Disclosures: [List ALL]
     
-    For each framework detected, provide:
-    1. Framework-specific compliance assessment
-    2. Missing required disclosures
-    3. Potential greenwashing indicators
-    4. Recommendations for improvement
-
-    Make sure the claims are concise and represent the core messaging from the document.
+    For each claim provide: Claim, Category, Context, Specificity, Verifiability, Framework Alignment, Potential Issues
+    
+    ## Framework Analysis
+    ### [Framework] Analysis
+    - Compliance Score: X%
+    - Claims: [Complete list]
+    - Missing Elements: [Complete list]
+    - Recommendations: [Complete list]
+    
+    Analyze the following report content thoroughly:
+    {esg_content}
   expected_output: >
-    A comprehensive analysis including:
-    1. A list of 5 distinct ESG-related claims with short descriptions or context snippets
-    2. Framework-specific analysis for each detected framework (TCFD, GRI, SASB, etc.)
-    3. Compliance scores and missing elements for each framework
-    4. Greenwashing detection results with confidence scores
-    5. Specific recommendations for improvement
+    Comprehensive structured analysis with ALL ESG claims, framework compliance assessments, and complete greenwashing indicators.
   agent: esg_analyst
 
 validate_claims:
   description: >
-    Review each ESG claim using internal reasoning and knowledge of sustainability standards.
-    You will analyze the claims against established ESG frameworks and best practices.
+    Analyze ALL ESG claims for potential greenwashing in a comprehensive audit.
     
-    The claims to validate are extracted from the complete document content provided in {claims_content}, which includes ALL sections of the sustainability report.
+    **ANALYSIS REQUIREMENTS**:
+    - Analyze ALL claims provided by the ESG Analyst (no limit)
+    - Look for vague language, missing targets, lack of verification
+    - Identify inconsistencies, cherry-picking, and missing disclosures
+    - Evaluate specificity, time-bound commitments, evidence, and transparency
     
-    For each claim, evaluate:
-      - Specificity and measurability of targets
-      - Time-bound commitments and deadlines
-      - Alignment with recognized sustainability standards
-      - Presence of third-party verification or certification
-      - Clarity and transparency of reporting
-      - Potential for greenwashing based on vague or unverifiable language
+    **GREENWASHING INDICATORS**:
+    - Vague language: "committed to sustainability", "working towards"
+    - No specific targets, timelines, or baselines
+    - Lack of baseline data or methodology
+    - Overly positive claims without evidence
+    - Cherry-picking positive data while ignoring negative aspects
+    - Using buzzwords without substance
+    - Claims that sound good but lack verifiability
     
-    Apply evaluation criteria such as:
-      - GRI Standards for reporting quality
-      - SASB metrics for materiality
-      - TCFD recommendations for climate disclosures
-      - General principles of credible sustainability reporting
+    **OUTPUT FORMAT**:
+    ## ESG Claims Greenwashing Analysis
     
-    For each claim:
-      - Determine if it is vague, unverifiable, or exaggerated
-      - Assess measurability and specificity
-      - Check for time-bound commitments
-      - Look for third-party certifications or standards
-      - Provide a greenwashing flag (Yes/No)
-      - Assign a confidence score from 0–100
-      - Write a brief explanation of your decision
+    ### Environmental Claims Analysis: [Analyze ALL]
+    ### Social Claims Analysis: [Analyze ALL]
+    ### Governance Claims Analysis: [Analyze ALL]
+    ### Financial Claims Analysis: [Analyze ALL]
+    ### Vague Claims Analysis: [Analyze ALL]
+    ### Missing Disclosures Analysis: [Analyze ALL]
     
-    Example evaluation:
-    Claim: "We aim to reduce emissions"
-    Greenwashing: YES
-    Reason: Vague, lacks baseline, target, and timeline
-    Confidence: 85%
+    For each claim provide: Claim, Greenwashing Flag (YES/NO), Confidence Score (0-100%), Critical Analysis, Evidence Assessment, Recommendations, Risk Level (High/Medium/Low)
     
-    Your final answer MUST be in markdown format with one section per claim.
+    ## Framework-Specific Greenwashing Assessment
+    ### TCFD Greenwashing Analysis: [If TCFD detected]
+    ### GRI Greenwashing Analysis: [If GRI detected]
+    ### SASB Greenwashing Analysis: [If SASB detected]
+    
+    Analyze the following ESG Analyst output thoroughly:
+    {esg_analyst_output}
   expected_output: >
-    A markdown report containing:
-    - Each ESG claim
-    - Greenwashing flag (Yes/No)
-    - Confidence score (0–100)
-    - Explanation based on framework analysis
+    Comprehensive greenwashing analysis with detailed assessment of ALL claims, framework-specific validation, and complete risk assessment.
   agent: compliance_checker

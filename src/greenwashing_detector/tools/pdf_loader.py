@@ -81,7 +81,17 @@ class PDFReportReader(BaseTool):
                 r"international standard on assurance engagements",
                 r"corporate sustainability reporting directive",
                 r"european sustainability reporting standards",
-                r"international financial reporting standards"
+                r"international financial reporting standards",
+                r"GRI",
+                r"TCFD",
+                r"SASB",
+                r"CDP",
+                r"ISO",
+                r"GHG Protocol",
+                r"ISAE",
+                r"CSR",
+                r"ESRS",
+                r"IFRS",
             ]
             
             explicit_match = any(re.search(framework, paragraph_lower) for framework in explicit_frameworks)

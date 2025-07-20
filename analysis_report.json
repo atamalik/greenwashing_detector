@@ -1,0 +1,55 @@
+{
+  "analysis_session": {
+    "start_time": "2025-07-03T08:47:53.429557",
+    "end_time": "2025-07-03T08:47:59.794719",
+    "duration_minutes": 0.10608626666666666
+  },
+  "web_search_metrics": {
+    "total_searches": 4,
+    "successful_searches": 4,
+    "failed_searches": 0,
+    "success_rate": "100.0%",
+    "unique_queries": 4,
+    "esg_topics_covered": [
+      "Governance",
+      "General ESG",
+      "Environmental",
+      "Claims Verification"
+    ]
+  },
+  "value_assessment": {
+    "esg_coverage_breadth": 4,
+    "search_diversity": 4,
+    "content_relevance": "Low (0.0%)"
+  },
+  "detailed_searches": [
+    {
+      "timestamp": "2025-07-03T08:47:55.128030",
+      "query": "Tesla sustainability claims verification",
+      "success": true,
+      "result_length": 76,
+      "has_esg_content": false
+    },
+    {
+      "timestamp": "2025-07-03T08:47:56.699841",
+      "query": "ESG greenwashing detection methods",
+      "success": true,
+      "result_length": 75,
+      "has_esg_content": false
+    },
+    {
+      "timestamp": "2025-07-03T08:47:58.202798",
+      "query": "GRI sustainability reporting standards 2024",
+      "success": true,
+      "result_length": 76,
+      "has_esg_content": false
+    },
+    {
+      "timestamp": "2025-07-03T08:47:59.794148",
+      "query": "carbon neutral certification verification process",
+      "success": true,
+      "result_length": 76,
+      "has_esg_content": false
+    }
+  ]
+}

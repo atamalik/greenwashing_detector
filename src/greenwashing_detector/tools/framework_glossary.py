@@ -40,7 +40,54 @@ class FrameworkGlossaryTool(BaseTool):
                 "prompt_snippets": {
                     "claims_extraction": "Extract ESG claims that reference or imply alignment with GRI standards (e.g. GRI 102, 305, 403). Focus on mentions of disclosures, indicators, and materiality. Provide section headers or page context for each.",
                     "greenwashing_analysis": "For each GRI-aligned claim, evaluate the specificity of disclosed indicators, presence of quantitative data, and whether the material topics are identified. Flag claims that use GRI language without proper supporting disclosures."
-                }
+                },
+                "analysis_prompt": """You are a Senior ESG Compliance Analyst evaluating the quality of a sustainability report's disclosure against GRI standards.
+
+<BASIC_INFO>:
+====
+Company Name: {company_name}
+Sector: {company_sector}
+Location: {company_location}
+====
+
+Your task is to evaluate whether the following GRI disclosure is sufficiently addressed:
+
+<GRI_DISCLOSURE_ID>: {disclosure_id}
+
+<DISCLOSURE_REQUIREMENTS>:
+====
+{requirements}
+====
+
+<DISCLOSURE_TEXT>:
+====
+{disclosure_text}
+====
+
+Evaluate how well this disclosure fulfills the GRI requirements. Be strict and analytical. Consider the following:
+
+1. Does the disclosure provide quantitative data? If so, is it detailed and transparent?
+2. Are methodologies, baselines, or scopes clearly stated?
+3. Is the language vague, promotional, or lacking substance?
+4. Are any critical components missing or misrepresented?
+5. Is the content measurable and verifiable?
+
+If the disclosure does **not address** the requirements at all, say so explicitly and assign a score of 0.
+
+SCORE rubric:
+- 100 = Fully meets all requirements with detail, evidence, and clarity.
+- 50 = Partially meets requirements, but with vague or missing data.
+- 0 = No alignment with GRI disclosure requirements.
+
+Return your answer in this **JSON format**:
+{
+  "DISCLOSURE_ID": "...",
+  "SUMMARY": "...",
+  "EVIDENCE_QUALITY": "High | Medium | Low",
+  "GREENWASHING_RISK": "Low | Medium | High",
+  "SCORE": 0-100,
+  "COMMENTS": "..."
+}"""
             },
 
             "TCFD": {
@@ -229,7 +276,54 @@ FRAMEWORKS = {
         "prompt_snippets": {
             "claims_extraction": "Extract ESG claims that reference or imply alignment with GRI standards (e.g. GRI 102, 305, 403). Focus on mentions of disclosures, indicators, and materiality. Provide section headers or page context for each.",
             "greenwashing_analysis": "For each GRI-aligned claim, evaluate the specificity of disclosed indicators, presence of quantitative data, and whether the material topics are identified. Flag claims that use GRI language without proper supporting disclosures."
-        }
+        },
+        "analysis_prompt": """You are a Senior ESG Compliance Analyst evaluating the quality of a sustainability report's disclosure against GRI standards.
+
+<BASIC_INFO>:
+====
+Company Name: {company_name}
+Sector: {company_sector}
+Location: {company_location}
+====
+
+Your task is to evaluate whether the following GRI disclosure is sufficiently addressed:
+
+<GRI_DISCLOSURE_ID>: {disclosure_id}
+
+<DISCLOSURE_REQUIREMENTS>:
+====
+{requirements}
+====
+
+<DISCLOSURE_TEXT>:
+====
+{disclosure_text}
+====
+
+Evaluate how well this disclosure fulfills the GRI requirements. Be strict and analytical. Consider the following:
+
+1. Does the disclosure provide quantitative data? If so, is it detailed and transparent?
+2. Are methodologies, baselines, or scopes clearly stated?
+3. Is the language vague, promotional, or lacking substance?
+4. Are any critical components missing or misrepresented?
+5. Is the content measurable and verifiable?
+
+If the disclosure does **not address** the requirements at all, say so explicitly and assign a score of 0.
+
+SCORE rubric:
+- 100 = Fully meets all requirements with detail, evidence, and clarity.
+- 50 = Partially meets requirements, but with vague or missing data.
+- 0 = No alignment with GRI disclosure requirements.
+
+Return your answer in this **JSON format**:
+{
+  "DISCLOSURE_ID": "...",
+  "SUMMARY": "...",
+  "EVIDENCE_QUALITY": "High | Medium | Low",
+  "GREENWASHING_RISK": "Low | Medium | High",
+  "SCORE": 0-100,
+  "COMMENTS": "..."
+}"""
     },
 
     "TCFD": {
